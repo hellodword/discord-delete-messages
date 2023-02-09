@@ -15,9 +15,15 @@ do
     [ "$total_results" == "null" ] && (echo "$response"; exit 1)
     [ "$total_results" == "0" ] && exit 0
 
-    echo "$response" | jq -r ".messages[] | .[0] | .id" | xargs -L 1 -I @%@%@ sh -c 'echo "deleting @%@%@"; <curl "https://discord.com/api/v9/channels/<channel>/messages/@%@%@" \
-            -X "DELETE" -s -f \
-            -H > || sleep 1s'
+
+    echo "$response" \
+      | jq -r '.messages[] | .[0] | .id + " " + .channel_id' \
+      | while read id channel_id; do
+        echo "deleting https://discord.com/api/v9/channels/$channel_id/messages/$id"
+        <curl "https://discord.com/api/v9/channels/$channel_id/messages/$id" \
+          -X "DELETE" -s -f \
+          -H > || sleep 1s
+      done
 
 done
 ```
